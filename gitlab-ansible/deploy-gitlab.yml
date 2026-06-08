@@ -1,0 +1,67 @@
+---
+- name: Deploy GitLab and GitLab Runner
+  hosts: gitlab
+  become: yes
+  vars:
+    # If your Vagrant VM has a dedicated IP, put it here. Otherwise, localhost/IP of the host works.
+    gitlab_external_url: "http://192.168.56.10"
+    gitlab_root_password: "DevOpsProjectPassword2026!"
+
+  tasks:
+    - name: Install required dependencies
+      apt:
+        name:
+          - curl
+          - openssh-server
+          - ca-certificates
+          - tzdata
+          - perl
+        state: present
+        update_cache: yes
+
+    - name: Download GitLab repository installation script
+      get_url:
+        url: https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh
+        dest: /tmp/gitlab_install.sh
+        mode: "0755"
+
+    - name: Execute GitLab repository script
+      command: /tmp/gitlab_install.sh
+      args:
+        creates: /etc/apt/sources.list.d/gitlab_gitlab-ce.list
+
+    - name: Install GitLab CE
+      apt:
+        name: gitlab-ce
+        state: present
+      environment:
+        EXTERNAL_URL: "{{ gitlab_external_url }}"
+        GITLAB_ROOT_PASSWORD: "{{ gitlab_root_password }}"
+
+    - name: Install Docker (Required for CI/CD pipelines)
+      apt:
+        name: docker.io
+        state: present
+      environment:
+        # These two lines completely stop Ubuntu 24.04 from asking questions and hanging
+        DEBIAN_FRONTEND: noninteractive
+        NEEDRESTART_MODE: a
+
+    - name: Download GitLab Runner repository script
+      get_url:
+        url: https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh
+        dest: /tmp/gitlab_runner_install.sh
+        mode: "0755"
+
+    - name: Execute GitLab Runner repository script
+      command: /tmp/gitlab_runner_install.sh
+      args:
+        creates: /etc/apt/sources.list.d/runner_gitlab-runner.list
+
+    - name: Install GitLab Runner
+      apt:
+        name: gitlab-runner
+        state: present
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+        NEEDRESTART_MODE: a

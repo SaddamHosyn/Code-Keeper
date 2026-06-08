@@ -40,3 +40,23 @@ Do the setup in this order:
 8. Only then start moving your project repos and pipelines into it.
 
 A good first goal is simple: open GitLab in the school network from the VM IP, log in with the initial root password file, and only after that add Tailscale for remote access. If you want, I can give you the **exact iMac-to-Ubuntu VM checklist** next, including what to install first, what hostname to use, and how to structure GitLab, Runner, and your repos.
+
+School iMac (Ubuntu VM via VirtualBox)
+├── GitLab CE (runs here, always on)
+├── GitLab Runner (runs here, docker executor)
+└── Tailscale (gives it a stable IP reachable from anywhere)
+
+Your Windows Laptop (remote)
+├── VS Code → pushes code to GitLab via Tailscale IP
+└── Tailscale (connects you to the iMac network)
+
+AWS (cloud)
+├── staging environment (Terraform-managed)
+└── prod environment (Terraform-managed)
+
+5 GitLab Repositories (hosted on your self-managed GitLab)
+├── gitlab-platform → Ansible playbooks for GitLab + Runner
+├── cloud-design-infra → Terraform infra pipeline
+├── inventory-app → CI + CD pipeline
+├── billing-app → CI + CD pipeline
+└── api-gateway → CI + CD pipeline
