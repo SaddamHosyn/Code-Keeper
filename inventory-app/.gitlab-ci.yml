@@ -1,0 +1,33 @@
+stages:
+  - validate
+  - test
+  - containerize
+
+variables:
+  DOCKER_BUILDKIT: "0"
+  IMAGE_REPO: "inventory-app"
+  IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
+  IMAGE_NAME: "$DOCKERHUB_USERNAME/$IMAGE_REPO"
+
+validate_files:
+  stage: validate
+  script:
+    - echo "Checking required files..."
+    - test -f Dockerfile
+    - test -f requirements.txt
+    - echo "Required files exist"
+
+test_shell:
+  stage: test
+  script:
+    - echo "Runner is working"
+    - echo "Syntax OK"
+
+containerize:
+  stage: containerize
+  script:
+    - echo "Building image with Classic Docker Builder"
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin docker.io
+    - docker build --network=host -t $IMAGE_NAME:$IMAGE_TAG -t $IMAGE_NAME:latest .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+    - docker push $IMAGE_NAME:latest

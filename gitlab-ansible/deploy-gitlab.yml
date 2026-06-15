@@ -5,7 +5,7 @@
   vars:
     # If your Vagrant VM has a dedicated IP, put it here. Otherwise, localhost/IP of the host works.
     gitlab_external_url: "http://192.168.56.10"
-    gitlab_root_password: "DevOpsProjectPassword2026!"
+    gitlab_root_password: "xK9#mP2$vL8@qR5!"
 
   tasks:
     - name: Install required dependencies

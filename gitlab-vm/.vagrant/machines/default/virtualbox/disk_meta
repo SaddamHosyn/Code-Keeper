@@ -1,1 +1,1 @@
-{}
+{"disk":[{"uuid":"0ecc9aec-3ebe-4779-8417-edbf0f2c5b66","port":"0","device":"0","name":"vagrant_primary","controller":"Virtio Controller"}],"floppy":[],"dvd":[]}
