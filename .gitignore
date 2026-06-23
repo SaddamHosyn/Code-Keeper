@@ -1,4 +1,34 @@
+# Secrets & Local Configurations
 .env
-.git
-__pycache__
+.env.*
+
+# Python Bytecode and Caches
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Vagrant VM Artifacts
+.vagrant/
+
+# Terraform Artifacts
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl
+crash.log
+
+# System & OS Files
+.DS_Store
+Thumbs.db
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*~
