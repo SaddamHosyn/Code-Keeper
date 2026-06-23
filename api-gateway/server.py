@@ -4,8 +4,8 @@ Purpose: Start the API Gateway server.
 Reference: CRUD_Master_README.md Section 8.4
 
 The API Gateway is the single entry point for all external client requests:
-- Routes HTTP requests to appropriate backend services...
-- Proxies /api/movies/* to Inventory API.
+- Routes HTTP requests to appropriate backend services.
+- Proxies /api/movies/* to Inventory API...
 - Publishes /api/billing events to RabbitMQ queue.
 """
 

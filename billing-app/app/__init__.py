@@ -1,5 +1,5 @@
 """
-Billing App Factory.....
+Billing App Factory
 Purpose: Initialize Flask app, configure database, and export app instance
 Reference: CRUD_Master_README.md Section 7.2-7.5
 """
