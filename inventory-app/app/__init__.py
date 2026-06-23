@@ -2,7 +2,7 @@
 Flask application factory and initialization.
 
 This module:
-1. Creates and configures the Flask app.
+1. Creates and configures the Flask app..
 2. Initializes SQLAlchemy with the app...
 3. Registers blueprints (routes)...
 """

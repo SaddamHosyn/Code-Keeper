@@ -1,12 +1,12 @@
 """
 API Gateway Entry Point
-Purpose: Start the API Gateway server
+Purpose: Start the API Gateway server.
 Reference: CRUD_Master_README.md Section 8.4
 
 The API Gateway is the single entry point for all external client requests:
-- Routes HTTP requests to appropriate backend services
-- Proxies /api/movies/* to Inventory API
-- Publishes /api/billing events to RabbitMQ queue
+- Routes HTTP requests to appropriate backend services...
+- Proxies /api/movies/* to Inventory API.
+- Publishes /api/billing events to RabbitMQ queue.
 """
 
 import os
@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# CRITICAL: Load environment variables FIRST (before importing app)
+# CRITICAL: Load environment variables FIRST (before importing app...)
 env_candidates = [
     Path('/app/.env'),  # Docker container path
     Path('/home/vagrant/.env'),  # Vagrant path

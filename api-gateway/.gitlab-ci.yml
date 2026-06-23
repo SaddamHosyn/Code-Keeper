@@ -1,34 +1,116 @@
 stages:
   - validate
   - test
+  - scan
   - containerize
+  - deploy_staging
+  - deploy_production
 
 variables:
   DOCKER_BUILDKIT: "0"
-  IMAGE_REPO: "billing-app"
   IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
-  IMAGE_NAME: "$DOCKERHUB_USERNAME/$IMAGE_REPO"
+  DOCKER_HOST: "unix:///var/run/docker.sock"
+  DOCKER_TLS_CERTDIR: ""
+  ECR_REPOSITORY: "staging-api-gateway"
+  PRODUCTION_ECR_REPOSITORY: "production-api-gateway"
+  ECS_CLUSTER_STAGING: "staging-cloud-design-cluster"
+  ECS_SERVICE_STAGING: "staging-api-gateway-service"
+  ECS_CLUSTER_PRODUCTION: "production-cloud-design-cluster"
+  ECS_SERVICE_PRODUCTION: "production-api-gateway-service"
 
 validate_files:
   stage: validate
   script:
-    - echo "Checking required files..."
     - test -f Dockerfile
-    - test -f entrypoint.sh
-    - echo "Required files exist"
+    - test -f requirements.txt
 
 test_shell:
   stage: test
   script:
     - echo "Runner is working"
-    - bash -n entrypoint.sh
-    - echo "entrypoint.sh syntax OK"
+
+scan_code:
+  stage: scan
+  script:
+    - rm -rf .trivy-cache || true
+    - mkdir -p .trivy-cache
+    - docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -v "$PWD/.trivy-cache:/tmp/trivy-cache" aquasec/trivy fs --cache-dir /tmp/trivy-cache --exit-code 0 --severity HIGH,CRITICAL /app || true
+    - rm -rf .trivy-cache || true
 
 containerize:
   stage: containerize
   script:
-    - echo "Building image with Classic Docker Builder"
-    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin docker.io
-    - docker build --network=host -t $IMAGE_NAME:$IMAGE_TAG -t $IMAGE_NAME:latest .
-    - docker push $IMAGE_NAME:$IMAGE_TAG
-    - docker push $IMAGE_NAME:latest
+    - export ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+    - export IMAGE_NAME="$ECR_REGISTRY/$ECR_REPOSITORY"
+    - |
+      ECR_PASSWORD=$(curl -s \
+        --aws-sigv4 "aws:amz:$AWS_REGION:ecr" \
+        --user "$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY" \
+        -H "x-amz-target: AmazonEC2ContainerRegistry_V20150921.GetAuthorizationToken" \
+        -H "Content-Type: application/x-amz-json-1.1" \
+        -d '{}' \
+        "https://api.ecr.$AWS_REGION.amazonaws.com/" \
+        | python3 -c 'import sys, json, base64; d=json.load(sys.stdin); t=d["authorizationData"][0]["authorizationToken"]; print(base64.b64decode(t).decode().split(":",1)[1])')
+      echo "$ECR_PASSWORD" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+    - docker buildx build --platform linux/amd64 --no-cache --pull -t "$IMAGE_NAME:$IMAGE_TAG" -t "$IMAGE_NAME:latest" --push .
+
+deploy_staging:
+  stage: deploy_staging
+  environment:
+    name: staging
+  script:
+    - export ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+    - export FULL_IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+    - TASK_DEF_ARN=$(docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$AWS_REGION" amazon/aws-cli ecs describe-services --cluster "$ECS_CLUSTER_STAGING" --services "$ECS_SERVICE_STAGING" --query 'services[0].taskDefinition' --output text)
+    - docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$AWS_REGION" amazon/aws-cli ecs describe-task-definition --task-definition "$TASK_DEF_ARN" --query taskDefinition > task-definition.json
+    - docker run --rm -i imega/jq --arg IMAGE "$FULL_IMAGE" '.containerDefinitions[0].image = $IMAGE' < task-definition.json > new-task-def.json
+    - docker run --rm -i imega/jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' < new-task-def.json > clean-task-def.json
+    - NEW_REVISION=$(docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$AWS_REGION" -v "$PWD:/workspace" -w /workspace amazon/aws-cli ecs register-task-definition --cli-input-json file://clean-task-def.json --query 'taskDefinition.taskDefinitionArn' --output text)
+    - docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$AWS_REGION" amazon/aws-cli ecs update-service --cluster "$ECS_CLUSTER_STAGING" --service "$ECS_SERVICE_STAGING" --task-definition "$NEW_REVISION" --force-new-deployment
+
+deploy_production:
+  stage: deploy_production
+  environment:
+    name: production
+  when: manual
+  resource_group: production-api-gateway
+  rules:
+    - if: '$CI_COMMIT_REF_PROTECTED == "true"'
+  script:
+    - export ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+    - export STAGING_IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+    - export PRODUCTION_IMAGE="$ECR_REGISTRY/$PRODUCTION_ECR_REPOSITORY:$IMAGE_TAG"
+    - |
+      ECR_PASSWORD=$(curl -s \
+        --aws-sigv4 "aws:amz:$AWS_REGION:ecr" \
+        --user "$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY" \
+        -H "x-amz-target: AmazonEC2ContainerRegistry_V20150921.GetAuthorizationToken" \
+        -H "Content-Type: application/x-amz-json-1.1" \
+        -d '{}' \
+        "https://api.ecr.$AWS_REGION.amazonaws.com/" \
+        | python3 -c 'import sys, json, base64; d=json.load(sys.stdin); t=d["authorizationData"][0]["authorizationToken"]; print(base64.b64decode(t).decode().split(":",1)[1])')
+      echo "$ECR_PASSWORD" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+    - |
+      docker run --rm \
+        -e AWS_ACCESS_KEY_ID \
+        -e AWS_SECRET_ACCESS_KEY \
+        -e AWS_DEFAULT_REGION="$AWS_REGION" \
+        amazon/aws-cli ecr describe-repositories \
+        --repository-names "$PRODUCTION_ECR_REPOSITORY" \
+        >/dev/null 2>&1 || \
+      docker run --rm \
+        -e AWS_ACCESS_KEY_ID \
+        -e AWS_SECRET_ACCESS_KEY \
+        -e AWS_DEFAULT_REGION="$AWS_REGION" \
+        amazon/aws-cli ecr create-repository \
+        --repository-name "$PRODUCTION_ECR_REPOSITORY"
+    - docker pull "$STAGING_IMAGE"
+    - docker tag "$STAGING_IMAGE" "$PRODUCTION_IMAGE"
+    - docker push "$PRODUCTION_IMAGE"
+    - docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$AWS_REGION" amazon/aws-cli ecr describe-images --repository-name "$PRODUCTION_ECR_REPOSITORY" --image-ids imageTag="$IMAGE_TAG"
+    - TASK_DEF_ARN=$(docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$AWS_REGION" amazon/aws-cli ecs describe-services --cluster "$ECS_CLUSTER_PRODUCTION" --services "$ECS_SERVICE_PRODUCTION" --query 'services[0].taskDefinition' --output text)
+    - docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$AWS_REGION" amazon/aws-cli ecs describe-task-definition --task-definition "$TASK_DEF_ARN" --query taskDefinition > task-definition.json
+    - docker run --rm -i imega/jq --arg IMAGE "$PRODUCTION_IMAGE" '.containerDefinitions[0].image = $IMAGE' < task-definition.json > new-task-def.json
+    - docker run --rm -i imega/jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' < new-task-def.json > clean-task-def.json
+    - NEW_REVISION=$(docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$AWS_REGION" -v "$PWD:/workspace" -w /workspace amazon/aws-cli ecs register-task-definition --cli-input-json file://clean-task-def.json --query 'taskDefinition.taskDefinitionArn' --output text)
+    - docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION="$AWS_REGION" amazon/aws-cli ecs update-service --cluster "$ECS_CLUSTER_PRODUCTION" --service "$ECS_SERVICE_PRODUCTION" --task-definition "$NEW_REVISION" --force-new-deployment

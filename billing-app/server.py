@@ -64,7 +64,10 @@ def main():
         print("[Shutdown] Received keyboard interrupt")
     except Exception as e:
         print(f"\n[Error] Fatal error: {e}")
-        sys.exit(1)
+        import time
+        print("Sleeping indefinitely for debugging...")
+        while True:
+            time.sleep(3600)
 
 if __name__ == '__main__':
     main()

@@ -1,5 +1,5 @@
 """
-Billing App Factory
+Billing App Factory.....
 Purpose: Initialize Flask app, configure database, and export app instance
 Reference: CRUD_Master_README.md Section 7.2-7.5
 """
@@ -15,7 +15,7 @@ def create_app():
     
     Creates and configures a Flask application instance with:
     - SQLAlchemy ORM initialized
-    - Database tables created (if missing)
+    - Database tables created (if missing)...
     - All models registered
     
     Returns:
