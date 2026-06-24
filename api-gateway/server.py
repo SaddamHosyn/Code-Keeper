@@ -5,8 +5,8 @@ Reference: CRUD_Master_README.md Section 8.4
 
 The API Gateway is the single entry point for all external client requests:
 - Routes HTTP requests to appropriate backend services.
-- Proxies /api/movies/* to Inventory API...
-- Publishes /api/billing events to RabbitMQ queue.
+- Proxies /api/movies/* to Inventory API.
+- Publishes /api/billing events to RabbitMQ queue...
 """
 
 import os
@@ -99,6 +99,8 @@ def main():
         )
     except KeyboardInterrupt:
         print("\n" + "-" * 70)
+
+        print("======================================")
         print("[Shutdown] Received keyboard interrupt")
     except Exception as e:
         print(f"\n[Error] Fatal error: {e}")
