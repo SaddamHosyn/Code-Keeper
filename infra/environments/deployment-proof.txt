@@ -1,0 +1,1 @@
+Infrastructure deployed successfully by GitLab CI/CD

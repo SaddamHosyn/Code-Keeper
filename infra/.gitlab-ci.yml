@@ -1,0 +1,99 @@
+stages:
+  - init
+  - validate
+  - plan
+  - apply_staging
+  - apply_production
+
+cache:
+  paths:
+    - environments/.terraform/
+    - environments/.terraform.lock.hcl
+
+init:
+  stage: init
+  script:
+    - echo "PWD at start (init):"
+    - pwd
+    - ls -lah
+    - cd environments
+    - echo "Now in (init):"
+    - pwd
+    - ls -lah
+    - terraform version
+    - terraform init -reconfigure
+
+validate:
+  stage: validate
+  script:
+    - echo "PWD at start (validate):"
+    - pwd
+    - ls -lah
+    - cd environments
+    - echo "Now in (validate):"
+    - pwd
+    - ls -lah
+    - terraform init -reconfigure
+    - terraform validate
+
+plan:
+  stage: plan
+  script:
+    - echo "PWD at start (plan):"
+    - pwd
+    - ls -lah
+    - cd environments
+    - echo "Now in (plan):"
+    - pwd
+    - ls -lah
+    - terraform init -reconfigure
+    - terraform workspace select staging || terraform workspace new staging
+    - terraform plan -var-file="staging.tfvars" -out="staging.tfplan"
+    - terraform workspace select production || terraform workspace new production
+    - terraform plan -var-file="production.tfvars" -out="production.tfplan"
+  artifacts:
+    paths:
+      - environments/staging.tfplan
+      - environments/production.tfplan
+    expire_in: 1 day
+
+apply_staging:
+  stage: apply_staging
+  dependencies:
+    - plan
+  script:
+    - echo "PWD at start (apply_staging):"
+    - pwd
+    - ls -lah
+    - cd environments
+    - echo "Now in (apply_staging):"
+    - pwd
+    - ls -lah
+    - terraform init -reconfigure
+    - terraform workspace select staging
+    - terraform apply -auto-approve staging.tfplan
+  environment:
+    name: staging
+  only:
+    - main
+
+apply_production:
+  stage: apply_production
+  dependencies:
+    - plan
+  script:
+    - echo "PWD at start (apply_production):"
+    - pwd
+    - ls -lah
+    - cd environments
+    - echo "Now in (apply_production):"
+    - pwd
+    - ls -lah
+    - terraform init -reconfigure
+    - terraform workspace select production
+    - terraform apply -auto-approve production.tfplan
+  when: manual
+  environment:
+    name: production
+  only:
+    - main
