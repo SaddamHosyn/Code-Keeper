@@ -1,8 +1,8 @@
 stages:
-  - validate
+  - build
   - test
   - scan
-  - containerize
+  - containerization
   - deploy_staging
   - deploy_production
 
@@ -18,11 +18,12 @@ variables:
   ECS_CLUSTER_PRODUCTION: "production-cloud-design-cluster"
   ECS_SERVICE_PRODUCTION: "production-api-gateway-service"
 
-validate_files:
-  stage: validate
+build:
+  stage: build
   script:
     - test -f Dockerfile
     - test -f requirements.txt
+    - python3 -m compileall .
 
 test_shell:
   stage: test
@@ -37,8 +38,8 @@ scan_code:
     - docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -v "$PWD/.trivy-cache:/tmp/trivy-cache" aquasec/trivy fs --cache-dir /tmp/trivy-cache --exit-code 0 --severity HIGH,CRITICAL /app || true
     - rm -rf .trivy-cache || true
 
-containerize:
-  stage: containerize
+containerization:
+  stage: containerization
   script:
     - export ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
     - export IMAGE_NAME="$ECR_REGISTRY/$ECR_REPOSITORY"

@@ -1,5 +1,5 @@
 """
-Purpose: Initialize Flask app with proxy and publisher routes
+Purpose: Initialize Flask app with proxy and publisher routes...
 
 Routes:
 - /api/movies/* -> HTTP proxy to Inventory API

@@ -1,8 +1,8 @@
 stages:
-  - validate
+  - build
   - test
   - scan
-  - containerize
+  - containerization
   - deploy_staging
   - deploy_production
 
@@ -22,13 +22,14 @@ variables:
   STAGING_ECR_REPOSITORY: "staging-billing"
   PRODUCTION_ECR_REPOSITORY: "production-billing"
 
-validate_files:
-  stage: validate
+build:
+  stage: build
   script:
     - echo "Checking required files..."
     - test -f Dockerfile
     - test -f requirements.txt
     - echo "Required files exist"
+    - python3 -m compileall .
 
 test_shell:
   stage: test
@@ -52,8 +53,8 @@ scan_code:
         /app || true
     - rm -rf .trivy-cache || true
 
-containerize:
-  stage: containerize
+containerization:
+  stage: containerization
   script:
     - echo "Docker version on runner:"
     - docker --version

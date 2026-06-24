@@ -30,7 +30,7 @@ def consume_billing_queue(app):
         app (Flask.app): Flask application instance for app context
     """
     
-    print("[RabbitMQ Consumer] Initializing connection to RabbitMQ...")
+    print("[RabbitMQ Consumer] Initializing connection to RabbitMQ")
     
     # Read RabbitMQ credentials from environment variables
     rabbitmq_host = os.environ.get('RABBITMQ_HOST', 'localhost')
