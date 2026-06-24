@@ -67,6 +67,32 @@ The repository must contain:
 *   **Answer:** This project integrates DevSecOps ("shifting security left") by checking code security throughout the pipeline:
     *   **Static Scanning:** Integrated **Trivy filesystem scans** (`aquasec/trivy fs`) directly in the CI `scan` stage to check dependencies and code for vulnerabilities on every commit.
     *   **Branch Protections:** Production deployments are strictly restricted to GitLab-protected branches using pipeline rules (`CI_COMMIT_REF_PROTECTED == "true"`).
+        
+        **Safe Test Procedure (Zero-Risk Version)**
+        
+        Part A: Test the Feature Branch (Does not affect main)
+        
+        Run these commands locally on your terminal (inside api-gateway or any microservice folder):
+        ```bash
+        # 1. Create a temporary feature branch
+        git checkout -b feature/audit-security-test
+        # 2. Make an empty commit (no files are modified, no code changes)
+        git commit --allow-empty -m "test: verify branch protection"
+        # 3. Push the feature branch to GitLab
+        git push origin feature/audit-security-test
+        ```
+        *   **What happens:** GitLab will trigger a pipeline for `feature/audit-security-test`.
+        *   **The Proof:** Open the pipeline in GitLab. You will see that there is no `deploy_production` job in the pipeline list.
+        
+        **Cleanup (Safe Deletion):** Once you show this to the auditor, delete the temporary branch entirely so it is gone:
+        ```bash
+        # Switch back to main
+        git checkout main
+        # Delete the local test branch
+        git branch -d feature/audit-security-test
+        # Delete the remote test branch on GitLab
+        git push origin --delete feature/audit-security-test
+        ```
     *   **Least Privilege IAM Roles:** Configured strict, minimal IAM Execution and Task roles for ECS containers.
     *   **Separation of Secrets:** AWS/Database passwords are dynamically injected from AWS SSM Parameter Store at runtime rather than committed.
 
@@ -132,9 +158,40 @@ The repository must contain:
 
 ## 3. GitLab & Runners Deployment Review
 
-Demonstrated commands:
-- `ansible-playbook --list-tasks` (Checks the playbook task structure in `gitlab-ansible`).
-- `systemctl status` (Checks the status of the docker runner host environment).
+**Proof 1: Run ansible-playbook --list-tasks**
+This command shows the auditor the exact automated steps defined to provision and configure GitLab and its runner. Run this command on your host machine (macOS terminal):
+
+Navigate to the gitlab-ansible directory:
+```bash
+cd gitlab-ansible
+```
+List the tasks in the deployment playbook:
+```bash
+ansible-playbook -i inventory.ini deploy-gitlab.yml --list-tasks
+```
+**What the auditor will see:** A structured list of tasks showing the automation steps:
+* Installing dependencies
+* Installing GitLab CE
+* Installing Docker (the CI/CD container runtime)
+* Installing GitLab Runner
+
+**Proof 2: Run systemctl status (and gitlab-ctl status)**
+To verify that the services are actively running, you must SSH into the virtual machine where they are hosted:
+
+Navigate to the gitlab-vm directory on your host machine:
+```bash
+cd gitlab-vm
+```
+SSH into the Ubuntu VM:
+```bash
+vagrant ssh
+```
+Once logged into the virtual machine (vagrant@ubuntu...), run the service status commands:
+```bash
+systemctl status gitlab-runner
+systemctl status docker
+sudo gitlab-ctl status
+```
 
 ### Checks
 
