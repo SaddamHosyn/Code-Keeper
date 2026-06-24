@@ -14,7 +14,7 @@ Code-Keeper is a complete **CI/CD pipeline for a microservices system** that dem
 - **Implement container security scanning** and dependency vulnerability detection
 - **Secure sensitive data** using AWS Secrets Manager and environment-based secret injection
 - **Implement approval gates** for production deployments to ensure code quality and compliance
-- **Enable infrastructure automation** with Infrastructure-as-Code (IaC) for reproducible deployments
+- **Enable infrastructure automation** with Infrastructure-as-Code (IaCfor reproducible deployments
 - **Establish GitLab as the central platform** for version control, CI/CD orchestration, and repository management
 - **Design high-availability architecture** with auto-scaling, load balancing, and multi-zone deployment
 
@@ -31,15 +31,15 @@ Code-Keeper is a complete **CI/CD pipeline for a microservices system** that dem
 └─────────────────────────────────────────────────────────────────┘
                               ↓ git push
 ┌─────────────────────────────────────────────────────────────────┐
-│                  School iMac (Host Machine)                     │
+│                  School iMac (Host Machine                    │
 │                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │  Ubuntu 20.04 Virtual Machine (Vagrant)                  │   │
+│  │  Ubuntu 20.04 Virtual Machine (Vagrant                 │   │
 │  │                                                          │   │
 │  │  ┌─────────────┐                ┌──────────────┐         │   │
 │  │  │   GitLab    │                │ GitLab       │         │   │
 │  │  │   CE        │───────────────→│ Runner       │         │   │
-│  │  │             │                │ (Docker)     │         │   │
+│  │  │             │                │ (Docker    │         │   │
 │  │  └─────────────┘                └──────────────┘         │   │
 │  │                                                          │   │
 │  └──────────────────────────────────────────────────────────┘   │
@@ -54,15 +54,15 @@ Code-Keeper is a complete **CI/CD pipeline for a microservices system** that dem
 │  │  ┌─────────────────────────────────────────────────┐    │    │
 │  │  │  VPC: 10.0.0.0/16                               │    │    │
 │  │  │  ├─ ALB (Load Balancer)                         │    │    │
-│  │  │  ├─ ECS Cluster (Container Orchestration)       │    │    │
+│  │  │  ├─ ECS Cluster (Container Orchestration      │    │    │
 │  │  │  │  ├─ API Gateway Service                      │    │    │
 │  │  │  │  ├─ Inventory Service                        │    │    │
 │  │  │  │  ├─ Billing Service                          │    │    │
 │  │  │  │  └─ RabbitMQ Service                         │    │    │
-│  │  │  ├─ PostgreSQL Databases (Inventory & Billing)  │    │    │
+│  │  │  ├─ PostgreSQL Databases (Inventory & Billing │    │    │
 │  │  │  ├─ EFS (Persistent Storage)                    │    │    │
 │  │  │  ├─ Cognito (User Authentication)               │    │    │
-│  │  │  └─ CloudWatch (Monitoring Dashboard)           │    │    │
+│  │  │  └─ CloudWatch (Monitoring Dashboard          │    │    │
 │  │  └─────────────────────────────────────────────────┘    │    │
 │  └─────────────────────────────────────────────────────────┘    │
 │                                                                 │
@@ -72,7 +72,7 @@ Code-Keeper is a complete **CI/CD pipeline for a microservices system** that dem
 │  └─────────────────────────────────────────────────────────┘    │
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────┐    │
-│  │  ECR (Docker Image Registry)                            │    │
+│  │  ECR (Docker Image Registry                           │    │
 │  │  ├─ staging-inventory-app                               │    │
 │  │  ├─ staging-api-gateway                                 │    │
 │  │  ├─ staging-billing-app                                 │    │
@@ -193,7 +193,7 @@ The project requires **5 separate GitLab repositories**, each with specific purp
 - **pytest** — Python unit testing
 - **Trivy** — Container image vulnerability scanning
 - **SonarQube** (optional) — Code quality analysis
-- **Snyk** (optional) — Dependency vulnerability scanning
+- **Snyk** (optional— Dependency vulnerability scanning
 
 ---
 
@@ -205,7 +205,7 @@ Before setting up the project, ensure you have:
 
 - **Docker** (v20.10+) and Docker Compose (v2.0+)
 - **Git** (v2.30+)
-- **Python** (v3.9+) for local testing
+- **Python** (v3.9+for local testing
 - **Terraform** (v1.5+) for infrastructure management
 - **Ansible** (v2.12+) for automation
 - **VS Code** or preferred IDE
@@ -223,14 +223,14 @@ Before setting up the project, ensure you have:
 ### AWS Account & Credentials
 
 - **AWS Account** with admin or equivalent permissions
-- **AWS CLI** (v2.0+) configured with credentials
+- **AWS CLI** (v2.0+configured with credentials
 - **AWS Region**: eu-north-1 (customizable in `variables.tf`)
 - **S3 Bucket** for Terraform state (create manually or via script)
 - **AWS IAM User** with programmatic access (Access Key + Secret Key)
 
 ### GitLab Setup
 
-- **GitLab CE** (Community Edition) instance running
+- **GitLab CE** (Community Editioninstance running
 - **GitLab Runner** registered and connected
 - **GitLab Personal Access Token** (for CI/CD access)
 - **GitLab Group or Project** to hold repositories
@@ -478,7 +478,7 @@ gitlab-runner verify
 
 ### Pipeline Stages for Application Repositories
 
-Each application repository (inventory-app, billing-app, api-gateway) implements the following CI stages:
+Each application repository (inventory-app, billing-app, api-gatewayimplements the following CI stages:
 
 #### Stage 1: Build
 
@@ -1521,3 +1521,5 @@ aws cloudwatch get-metric-statistics \
   --metric-name CPUUtilization \
   --dimensions Name=ClusterName,Value=staging-ecs-cluster
 ```
+ 
+ 
